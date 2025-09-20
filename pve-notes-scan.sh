@@ -1,9 +1,11 @@
-#!/bin/bash
-# pve-notes-scan.sh — v1.0.0
-# Multi-line Notes: IP / OS / Status (emoji), IPv4-only, API write fallback to qm/pct.
+#!/usr/bin/env bash
+# pve-notes-scan.sh — v1.1.0
+# Multi-line Notes with forced breaks (CRLF + U+2028), IPv4-only, emoji status.
+# Writes via API first (pvesh), falls back to qm/pct.
+
 set -euo pipefail
 SCRIPT_NAME="${0##*/}"
-SCRIPT_VERSION="1.0.0"
+SCRIPT_VERSION="1.1.0"
 
 if [[ "${1:-}" == "--version" ]]; then
   echo "$SCRIPT_NAME $SCRIPT_VERSION"
@@ -11,6 +13,9 @@ if [[ "${1:-}" == "--version" ]]; then
 fi
 
 NODE="$(hostname -s)"
+
+# ---- line break that survives most UIs (CRLF + Unicode LINE SEPARATOR) ----
+LB=$'\r\n\u2028'
 
 status_icon() {
   case "${1,,}" in
@@ -22,9 +27,10 @@ status_icon() {
 }
 
 build_notes() {
+  # args: ip os status
   local ip="$1" os="$2" status="${3:-unknown}" icon
   icon="$(status_icon "$status")"
-  printf 'IP: %s\nOS: %s\nStatus: %s %s' "$ip" "$os" "$icon" "$status"
+  printf 'IP: %s%sOS: %s%sStatus: %s %s' "$ip" "$LB" "$os" "$LB" "$icon" "$status"
 }
 
 set_vm_desc() {
@@ -110,4 +116,4 @@ pct list 2>/dev/null | awk 'NR>1 {print $1}' | while read -r cid; do
 done
 
 echo "Done."
-
+echo "If the Summary preview still shows one line, open the VM/CT → Notes tab to see line breaks."
