@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# pve-notes-scan.sh — v1.1.0
-# Multi-line Notes with forced breaks (CRLF + U+2028), IPv4-only, emoji status.
+# pve-notes-scan.sh — v1.1.1
+# Multi-line Notes with forced breaks (CRLF + U+2028), IPv4-only.
+# Bold IP and OS labels (Markdown-style). No emojis.
 # Writes via API first (pvesh), falls back to qm/pct.
 
 set -euo pipefail
 SCRIPT_NAME="${0##*/}"
-SCRIPT_VERSION="1.1.0"
+SCRIPT_VERSION="1.1.1"
 
 if [[ "${1:-}" == "--version" ]]; then
   echo "$SCRIPT_NAME $SCRIPT_VERSION"
@@ -17,20 +18,12 @@ NODE="$(hostname -s)"
 # ---- line break that survives most UIs (CRLF + Unicode LINE SEPARATOR) ----
 LB=$'\r\n\u2028'
 
-status_icon() {
-  case "${1,,}" in
-    running) echo "🟢" ;;
-    stopped) echo "🔴" ;;
-    paused|suspended) echo "🟡" ;;
-    *) echo "⚪" ;;
-  esac
-}
-
 build_notes() {
   # args: ip os status
-  local ip="$1" os="$2" status="${3:-unknown}" icon
-  icon="$(status_icon "$status")"
-  printf 'IP: %s%sOS: %s%sStatus: %s %s' "$ip" "$LB" "$os" "$LB" "$icon" "$status"
+  local ip="$1" os="$2" status="${3:-unknown}"
+  # Markdown-style bold for labels; many Proxmox views show raw text
+  # but the Notes tab preserves newlines and often renders formatting.
+  printf '**IP:** %s%s**OS:** %s%s**Status:** %s' "$ip" "$LB" "$os" "$LB" "$status"
 }
 
 set_vm_desc() {
@@ -116,4 +109,4 @@ pct list 2>/dev/null | awk 'NR>1 {print $1}' | while read -r cid; do
 done
 
 echo "Done."
-echo "If the Summary preview still shows one line, open the VM/CT → Notes tab to see line breaks."
+echo "If your Summary panel still flattens the text, open the VM/CT → Notes tab to see the line breaks."
