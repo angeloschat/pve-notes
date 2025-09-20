@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pve-notes-scan.sh — v1.2.3
+# pve-notes-scan.sh — v1.2.4
 # Multiline Notes (Markdown): **IP:** <ip> / **Host:** <hostname> / **OS:** <os>
 # - IPv4 only (exclude 127.*)
 # - No status line
@@ -8,7 +8,7 @@
 
 set -euo pipefail
 SCRIPT_NAME="${0##*/}"
-SCRIPT_VERSION="1.2.3"
+SCRIPT_VERSION="1.2.4"
 
 if [[ "${1:-}" == "--version" ]]; then
   echo "$SCRIPT_NAME $SCRIPT_VERSION"
@@ -66,7 +66,6 @@ scan_vm() {
         | head -1 || true)"
     [[ -n "${os:-}" ]] || os="unknown"
   else
-    # Not running → hostname fallback to VM name
     host="${name:-unknown}"
   fi
 
