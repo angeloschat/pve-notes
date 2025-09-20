@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# pve-notes-scan.sh — v1.2.2
-# Multiline Notes (Markdown): **IP:** <ip> (**Host:** <hostname>) / **OS:** <os> / Status: <status>
+# pve-notes-scan.sh — v1.2.3
+# Multiline Notes (Markdown): **IP:** <ip> / **Host:** <hostname> / **OS:** <os>
 # - IPv4 only (exclude 127.*)
-# - No emojis, bold IP & OS
+# - No status line
 # - Writes via API first (pvesh), falls back to qm/pct
 # - Forces Markdown line breaks (two trailing spaces before newline)
 
 set -euo pipefail
 SCRIPT_NAME="${0##*/}"
-SCRIPT_VERSION="1.2.2"
+SCRIPT_VERSION="1.2.3"
 
 if [[ "${1:-}" == "--version" ]]; then
   echo "$SCRIPT_NAME $SCRIPT_VERSION"
@@ -18,16 +18,16 @@ fi
 NODE="$(hostname -s)"
 
 build_notes() {
-  # args: ip hostname os status
-  local ip="$1" host="$2" os="$3" status="${4:-unknown}"
+  # args: ip host os
+  local ip="$1" host="$2" os="$3"
   # Two spaces before \n force Markdown line breaks in the Summary panel.
-  printf '**IP:** %s (**Host:** %s)  \n**OS:** %s  \nStatus: %s' "$ip" "$host" "$os" "$status"
+  printf '**IP:** %s  \n**Host:** %s  \n**OS:** %s' "$ip" "$host" "$os"
 }
 
 set_vm_desc() {
   local vmid="$1" text="$2"
   pvesh set "/nodes/$NODE/qemu/$vmid/config" -description "$text" >/dev/null 2>&1 \
-    || qm set "$vmid" --description "$text" >/devnull 2>&1
+    || qm set "$vmid" --description "$text" >/dev/null 2>&1
 }
 
 set_ct_desc() {
@@ -54,7 +54,7 @@ scan_vm() {
         | head -1 || true)"
     [[ -n "${ip:-}" ]] || ip="no-ip-found"
 
-    # Hostname via guest agent (if available), else fall back to VM name
+    # Hostname via guest agent; fallback to VM name
     host="$(qm agent "$vmid" get-host-name 2>/dev/null \
         | grep -oP '"host-name"\s*:\s*"\K[^"]+' \
         | head -1 || true)"
@@ -70,7 +70,7 @@ scan_vm() {
     host="${name:-unknown}"
   fi
 
-  local notes; notes="$(build_notes "$ip" "$host" "$os" "${status:-unknown}")"
+  local notes; notes="$(build_notes "$ip" "$host" "$os")"
   set_vm_desc "$vmid" "$notes" || echo "  ! Failed to set description for VM $vmid"
   echo "  ✓ Updated"
   echo
@@ -94,7 +94,7 @@ scan_lxc() {
          | head -1" 2>/dev/null || true)"
     [[ -n "${ip:-}" ]] || ip="no-ip-found"
 
-    # Hostname from container
+    # Hostname from container; fallback to configured name
     host="$(pct exec "$ctid" -- sh -c 'hostname 2>/dev/null || cat /etc/hostname 2>/dev/null' 2>/dev/null \
            | head -n1 || true)"
     [[ -n "${host:-}" ]] || host="${name:-unknown}"
@@ -114,7 +114,7 @@ scan_lxc() {
     host="${name:-unknown}"
   fi
 
-  local notes; notes="$(build_notes "$ip" "$host" "$os" "${status:-unknown}")"
+  local notes; notes="$(build_notes "$ip" "$host" "$os")"
   set_ct_desc "$ctid" "$notes" || echo "  ! Failed to set description for CT $ctid"
   echo "  ✓ Updated"
   echo
