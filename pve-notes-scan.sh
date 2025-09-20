@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pve-notes-scan.sh — v1.3.1
+# pve-notes-scan.sh — v1.3.2
 # Notes (Markdown):
 # **IP:** <ip>
 # **Host:** <hostname>
@@ -13,14 +13,14 @@
 
 set -euo pipefail
 SCRIPT_NAME="${0##*/}"
-SCRIPT_VERSION="1.3.1"
+SCRIPT_VERSION="1.3.2"
 
 # ---- Icon controls ----
 # Toggle icons (1/0), choose HTML <img> (1) or Markdown image (0),
 # and set icon height in pixels if HTML is used.
 PVE_NOTES_ICONS="${PVE_NOTES_ICONS:-1}"
 PVE_NOTES_ICON_HTML="${PVE_NOTES_ICON_HTML:-1}"
-PVE_NOTES_ICON_HEIGHT="${PVE_NOTES_ICON_HEIGHT:-16}"
+PVE_NOTES_ICON_HEIGHT="${PVE_NOTES_ICON_HEIGHT:-10}"
 ICON_CDN_BASE="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons"
 
 if [[ "${1:-}" == "--version" ]]; then
@@ -44,7 +44,8 @@ build_notes() {
       if [[ -n "$slug" && -n "$ext" && "$slug" != "$ext" ]]; then
         url="${ICON_CDN_BASE}/${ext}/${slug}.${ext}"
         if [[ "$PVE_NOTES_ICON_HTML" == "1" ]]; then
-          icon_snippet="<img src=\"${url}\" alt=\"${slug}\" height=\"${PVE_NOTES_ICON_HEIGHT}\" style=\"vertical-align:text-bottom;margin-right:4px;\"> "
+icon_snippet="<img src=\"${url}\" alt=\"${slug}\" height=\"${PVE_NOTES_ICON_HEIGHT}\" style=\"height:${PVE_NOTES_ICON_HEIGHT}px;width:auto;vertical-align:text-bottom;margin-right:4px;\"> "
+
         else
           icon_snippet="![](${url}) "
         fi
