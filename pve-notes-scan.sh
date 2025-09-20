@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# pve-notes-scan.sh — v1.1.1
-# Multi-line Notes with forced breaks (CRLF + U+2028), IPv4-only.
-# Bold IP and OS labels (Markdown-style). No emojis.
-# Writes via API first (pvesh), falls back to qm/pct.
+# pve-notes-scan.sh — v1.2.1
+# Multiline Notes only, IPv4-only.
+# - Bold IP and OS (Markdown)
+# - No emojis
+# - Writes via API first (pvesh), falls back to qm/pct
+# - Forces Markdown line breaks (two trailing spaces before newline)
 
 set -euo pipefail
 SCRIPT_NAME="${0##*/}"
-SCRIPT_VERSION="1.1.1"
+SCRIPT_VERSION="1.2.1"
 
 if [[ "${1:-}" == "--version" ]]; then
   echo "$SCRIPT_NAME $SCRIPT_VERSION"
@@ -15,27 +17,23 @@ fi
 
 NODE="$(hostname -s)"
 
-# ---- line break that survives most UIs (CRLF + Unicode LINE SEPARATOR) ----
-LB=$'\r\n\u2028'
-
 build_notes() {
   # args: ip os status
   local ip="$1" os="$2" status="${3:-unknown}"
-  # Markdown-style bold for labels; many Proxmox views show raw text
-  # but the Notes tab preserves newlines and often renders formatting.
-  printf '**IP:** %s%s**OS:** %s%s**Status:** %s' "$ip" "$LB" "$os" "$LB" "$status"
+  # Two spaces before \n force a Markdown line break in the Summary Notes panel
+  printf '**IP:** %s  \n**OS:** %s  \nStatus: %s' "$ip" "$os" "$status"
 }
 
 set_vm_desc() {
   local vmid="$1" text="$2"
-  pvesh set "/nodes/$NODE/qemu/$vmid/config" -description "$text" >/dev/null 2>&1 || \
-  qm set "$vmid" --description "$text" >/dev/null 2>&1
+  pvesh set "/nodes/$NODE/qemu/$vmid/config" -description "$text" >/dev/null 2>&1 \
+    || qm set "$vmid" --description "$text" >/dev/null 2>&1
 }
 
 set_ct_desc() {
   local ctid="$1" text="$2"
-  pvesh set "/nodes/$NODE/lxc/$ctid/config" -description "$text" >/dev/null 2>&1 || \
-  pct set "$ctid" --description "$text" >/dev/null 2>&1
+  pvesh set "/nodes/$NODE/lxc/$ctid/config" -description "$text" >/dev/null 2>&1 \
+    || pct set "$ctid" --description "$text" >/dev/null 2>&1
 }
 
 scan_vm() {
@@ -109,4 +107,3 @@ pct list 2>/dev/null | awk 'NR>1 {print $1}' | while read -r cid; do
 done
 
 echo "Done."
-echo "If your Summary panel still flattens the text, open the VM/CT → Notes tab to see the line breaks."
